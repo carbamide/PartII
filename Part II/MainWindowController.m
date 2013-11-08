@@ -69,14 +69,44 @@
     dispatch_async(dispatch_get_main_queue(), ^{
         NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:[text stringByAppendingString:@"\n"]];
         
+        [attributedString addAttribute:NSFontAttributeName value:[NSFont fontWithName:@"Andale Mono" size:14] range:NSMakeRange(0, [text length])];
+        
         if (color) {
             [attributedString addAttribute:NSForegroundColorAttributeName value:color range:NSMakeRange(0, [text length])];
         }
+        
+        NSString *pattern = @"select|from|where|pragma";
+        NSRegularExpression *expression = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
+        NSRange range = NSMakeRange(0, [text length]);
+        
+        [expression enumerateMatchesInString:text options:0 range:range usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
+            NSRange range = [result rangeAtIndex:0];
+            [attributedString addAttribute:NSForegroundColorAttributeName value:[NSColor blueColor] range:range];
+        }];
+        
+        pattern = [[[self tablesListArray] componentsJoinedByString:@"|"] stringByAppendingString:@"|sqlite_master"];
+        expression = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
+        range = NSMakeRange(0, [text length]);
+        
+        [expression enumerateMatchesInString:text options:0 range:range usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
+            NSRange range = [result rangeAtIndex:0];
+            [attributedString addAttribute:NSForegroundColorAttributeName value:[NSColor orangeColor] range:range];
+        }];
+        
+        pattern = @"'(.*)'";
+        expression = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
+        range = NSMakeRange(0, [text length]);
+        
+        [expression enumerateMatchesInString:text options:0 range:range usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
+            NSRange range = [result rangeAtIndex:0];
+            [attributedString addAttribute:NSForegroundColorAttributeName value:[NSColor redColor] range:range];
+        }];
         
         [[[self logTextView] textStorage] appendAttributedString:attributedString];
         [[self logTextView] scrollRangeToVisible:NSMakeRange([[[self logTextView] string] length], 0)];
     });
 }
+
 #pragma mark -
 #pragma mark IBActions
 
@@ -256,9 +286,9 @@
         [[self sqlQueryTableView] addTableColumn:column[i]];
     }
     
-    [[self sqlQueryTableView] reloadData];
-
     [self setSqlDataArray:finalArray];
+    
+    [[self sqlQueryTableView] reloadData];
 }
 
 -(NSArray *)tableInfo:(NSString *)table
@@ -412,4 +442,49 @@
     }
     return nil;
 }
+
+#pragma mark -
+#pragma mark NSTextDelegate
+
+-(void)textDidChange:(NSNotification *)notification
+{
+//    NSRange wordRange = [[[self rawSqlTextView] string] rangeOfString:@" " options:NSBackwardsSearch];
+//    
+//    NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] init];
+//    NSString *text = [[self rawSqlTextView] string];
+//    
+//    NSString *pattern = @"select|from|where|pragma";
+//    NSRegularExpression *expression = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
+//    NSRange range = NSMakeRange(0, [text length]);
+//    
+//    [expression enumerateMatchesInString:text options:0 range:range usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
+//        NSRange range = [result rangeAtIndex:0];
+//        [attributedString addAttribute:NSForegroundColorAttributeName value:[NSColor blueColor] range:range];
+//    }];
+//    
+//    pattern = [[[self tablesListArray] componentsJoinedByString:@"|"] stringByAppendingString:@"|sqlite_master"];
+//    expression = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
+//    range = NSMakeRange(0, [text length]);
+//    
+//    [expression enumerateMatchesInString:text options:0 range:range usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
+//        NSRange range = [result rangeAtIndex:0];
+//        [attributedString addAttribute:NSForegroundColorAttributeName value:[NSColor orangeColor] range:range];
+//    }];
+//    
+//    pattern = @"'(.*)'";
+//    expression = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
+//    range = NSMakeRange(0, [text length]);
+//    
+//    [expression enumerateMatchesInString:text options:0 range:range usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
+//        NSRange range = [result rangeAtIndex:0];
+//        [attributedString addAttribute:NSForegroundColorAttributeName value:[NSColor redColor] range:range];
+//    }];
+//    
+//    if ([attributedString length] > 0) {
+//        [[[self rawSqlTextView] textStorage] replaceCharactersInRange:NSMakeRange(0, [text length]) withAttributedString:attributedString];
+//    }
+//    
+//    [[[self rawSqlTextView] textStorage] replaceCharactersInRange:wordRange withAttributedString:attributedString];
+}
+
 @end

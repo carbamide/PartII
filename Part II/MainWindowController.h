@@ -8,7 +8,7 @@
 
 #import <Cocoa/Cocoa.h>
 
-@interface MainWindowController : NSWindowController <NSOutlineViewDelegate, NSOutlineViewDataSource, NSTableViewDelegate, NSTableViewDataSource>
+@interface MainWindowController : NSWindowController <NSOutlineViewDelegate, NSOutlineViewDataSource, NSTableViewDelegate, NSTableViewDataSource, NSTextDelegate>
 
 @property (strong) IBOutlet NSOutlineView *tableListSourceView;
 @property (strong) IBOutlet NSSegmentedControl *viewSelectorSegmentedControl;

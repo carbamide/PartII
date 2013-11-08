@@ -25,7 +25,7 @@
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES" texturedBackground="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="196" y="240" width="976" height="701"/>
-            <rect key="screenRect" x="0.0" y="0.0" width="1680" height="1028"/>
+            <rect key="screenRect" x="0.0" y="0.0" width="1920" height="1178"/>
             <view key="contentView" id="2">
                 <rect key="frame" x="0.0" y="0.0" width="976" height="701"/>
                 <autoresizingMask key="autoresizingMask"/>
@@ -34,14 +34,14 @@
                         <rect key="frame" x="0.0" y="34" width="976" height="667"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <subviews>
-                            <customView ambiguous="YES" misplaced="YES" id="8Xp-he-PgY">
+                            <customView misplaced="YES" id="8Xp-he-PgY">
                                 <rect key="frame" x="0.0" y="0.0" width="227" height="667"/>
                                 <autoresizingMask key="autoresizingMask"/>
                                 <subviews>
-                                    <scrollView ambiguous="YES" misplaced="YES" autohidesScrollers="YES" horizontalLineScroll="24" horizontalPageScroll="10" verticalLineScroll="24" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ZmU-8m-rp7">
+                                    <scrollView misplaced="YES" autohidesScrollers="YES" horizontalLineScroll="24" horizontalPageScroll="10" verticalLineScroll="24" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ZmU-8m-rp7">
                                         <rect key="frame" x="0.0" y="0.0" width="225" height="667"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                        <clipView key="contentView" ambiguous="YES" misplaced="YES" id="ChA-cl-vFh">
+                                        <clipView key="contentView" misplaced="YES" id="ChA-cl-vFh">
                                             <rect key="frame" x="1" y="1" width="223" height="665"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
@@ -91,32 +91,32 @@
                                     <constraint firstItem="ZmU-8m-rp7" firstAttribute="top" secondItem="8Xp-he-PgY" secondAttribute="top" id="mqC-fc-vbq"/>
                                 </constraints>
                             </customView>
-                            <customView ambiguous="YES" misplaced="YES" id="PPG-XQ-4OX">
+                            <customView misplaced="YES" id="PPG-XQ-4OX">
                                 <rect key="frame" x="228" y="0.0" width="748" height="667"/>
                                 <autoresizingMask key="autoresizingMask"/>
                                 <subviews>
-                                    <tabView ambiguous="YES" misplaced="YES" drawsBackground="NO" type="noTabsNoBorder" initialItem="Uhq-Kr-SUp" translatesAutoresizingMaskIntoConstraints="NO" id="b6Y-gi-V4k">
+                                    <tabView drawsBackground="NO" type="noTabsNoBorder" initialItem="Uhq-Kr-SUp" translatesAutoresizingMaskIntoConstraints="NO" id="b6Y-gi-V4k">
                                         <rect key="frame" x="0.0" y="0.0" width="748" height="628"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                         <font key="font" metaFont="system"/>
                                         <tabViewItems>
                                             <tabViewItem label="Tab" identifier="0" id="Uhq-Kr-SUp">
                                                 <view key="view" id="yFJ-w4-qv3">
-                                                    <rect key="frame" x="0.0" y="0.0" width="748" height="628"/>
+                                                    <rect key="frame" x="0.0" y="0.0" width="2" height="46"/>
                                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                     <subviews>
                                                         <splitView misplaced="YES" dividerStyle="paneSplitter" translatesAutoresizingMaskIntoConstraints="NO" id="3M1-hN-EtC">
-                                                            <rect key="frame" x="0.0" y="582" width="748" height="628"/>
+                                                            <rect key="frame" x="0.0" y="0.0" width="748" height="628"/>
                                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                             <subviews>
-                                                                <customView id="Ma5-6F-KjY">
+                                                                <customView misplaced="YES" id="Ma5-6F-KjY">
                                                                     <rect key="frame" x="0.0" y="0.0" width="748" height="298"/>
                                                                     <autoresizingMask key="autoresizingMask"/>
                                                                     <subviews>
-                                                                        <scrollView autohidesScrollers="YES" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="sgr-jL-nrK">
+                                                                        <scrollView misplaced="YES" autohidesScrollers="YES" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="sgr-jL-nrK">
                                                                             <rect key="frame" x="0.0" y="0.0" width="748" height="298"/>
                                                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                                                            <clipView key="contentView" id="y3c-NV-rtM">
+                                                                            <clipView key="contentView" misplaced="YES" id="y3c-NV-rtM">
                                                                                 <rect key="frame" x="1" y="17" width="746" height="280"/>
                                                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                                                 <subviews>
@@ -196,14 +196,14 @@
                                                                         <constraint firstItem="sgr-jL-nrK" firstAttribute="leading" secondItem="Ma5-6F-KjY" secondAttribute="leading" id="xL7-uc-IQv"/>
                                                                     </constraints>
                                                                 </customView>
-                                                                <customView id="TVh-BW-Xiq">
+                                                                <customView misplaced="YES" id="TVh-BW-Xiq">
                                                                     <rect key="frame" x="0.0" y="308" width="748" height="320"/>
                                                                     <autoresizingMask key="autoresizingMask"/>
                                                                     <subviews>
-                                                                        <scrollView autohidesScrollers="YES" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ETt-dl-geh">
+                                                                        <scrollView misplaced="YES" autohidesScrollers="YES" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ETt-dl-geh">
                                                                             <rect key="frame" x="0.0" y="0.0" width="748" height="320"/>
                                                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                                                            <clipView key="contentView" id="19o-4F-iW3">
+                                                                            <clipView key="contentView" misplaced="YES" id="19o-4F-iW3">
                                                                                 <rect key="frame" x="1" y="17" width="746" height="302"/>
                                                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                                                 <subviews>
@@ -324,7 +324,7 @@
                                                 </view>
                                             </tabViewItem>
                                             <tabViewItem label="Item 2" identifier="" id="LEs-CH-DnX">
-                                                <view key="view" ambiguous="YES" id="JSY-T2-JAy">
+                                                <view key="view" id="JSY-T2-JAy">
                                                     <rect key="frame" x="0.0" y="0.0" width="748" height="628"/>
                                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                     <subviews>
@@ -352,6 +352,9 @@
                                                                                         <color key="insertionPointColor" white="0.0" alpha="1" colorSpace="calibratedWhite"/>
                                                                                         <size key="minSize" width="746" height="258"/>
                                                                                         <size key="maxSize" width="748" height="10000000"/>
+                                                                                        <connections>
+                                                                                            <outlet property="delegate" destination="-2" id="h2I-6u-sv2"/>
+                                                                                        </connections>
                                                                                     </textView>
                                                                                 </subviews>
                                                                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
@@ -361,7 +364,7 @@
                                                                                 <autoresizingMask key="autoresizingMask"/>
                                                                             </scroller>
                                                                             <scroller key="verticalScroller" verticalHuggingPriority="750" doubleValue="1" horizontal="NO" id="4nO-PS-IyU">
-                                                                                <rect key="frame" x="731" y="1" width="16" height="258"/>
+                                                                                <rect key="frame" x="-15" y="1" width="16" height="0.0"/>
                                                                                 <autoresizingMask key="autoresizingMask"/>
                                                                             </scroller>
                                                                         </scrollView>
@@ -485,7 +488,7 @@
                                                                 <autoresizingMask key="autoresizingMask"/>
                                                             </scroller>
                                                             <scroller key="verticalScroller" verticalHuggingPriority="750" doubleValue="1" horizontal="NO" id="XEW-5w-Jvg">
-                                                                <rect key="frame" x="731" y="1" width="16" height="626"/>
+                                                                <rect key="frame" x="-15" y="1" width="16" height="0.0"/>
                                                                 <autoresizingMask key="autoresizingMask"/>
                                                             </scroller>
                                                         </scrollView>
@@ -494,7 +497,7 @@
                                             </tabViewItem>
                                         </tabViewItems>
                                     </tabView>
-                                    <segmentedControl verticalHuggingPriority="750" ambiguous="YES" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7X7-kX-vUP">
+                                    <segmentedControl verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7X7-kX-vUP">
                                         <rect key="frame" x="234" y="634" width="281" height="25"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                         <segmentedCell key="cell" alignment="left" style="texturedSquare" trackingMode="selectOne" id="RDR-he-1Gs">
