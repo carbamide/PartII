@@ -50,6 +50,8 @@
     [[self logTextView] setContinuousSpellCheckingEnabled:NO];
     [[self logTextView] setFont:[NSFont fontWithName:@"Andale Mono" size:14]];
     
+    [[self logTextView] setTextContainerInset:NSMakeSize(-5, 0)];
+    
     _lineNumberView = [[NoodleLineNumberView alloc] initWithScrollView:[[self logTextView] enclosingScrollView]];
     [[[self logTextView] enclosingScrollView] setVerticalRulerView:_lineNumberView];
     [[[self logTextView] enclosingScrollView] setHasHorizontalRuler:NO];
