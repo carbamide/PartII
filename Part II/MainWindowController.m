@@ -8,6 +8,7 @@
 
 #import "MainWindowController.h"
 #import <sqlite3.h>
+#import "NoodleLineNumberView.h"
 
 @interface MainWindowController ()
 {
@@ -21,6 +22,8 @@
 @property (strong, nonatomic) NSMutableArray *tableDataArray;
 @property (strong, nonatomic) NSMutableArray *sqlDataArray;
 @property (strong, nonatomic) NSDateFormatter *dateFormatter;
+@property (strong, nonatomic) NoodleLineNumberView	*lineNumberView;
+
 @end
 
 @implementation MainWindowController
@@ -33,7 +36,7 @@
     self = [super initWithWindow:window];
     if (self) {
         _dateFormatter = [[NSDateFormatter alloc] init];
-        [_dateFormatter setTimeStyle:NSDateFormatterLongStyle];
+        [_dateFormatter setTimeStyle:NSDateFormatterMediumStyle];
     }
     return self;
 }
@@ -46,6 +49,18 @@
     [[self logTextView] setAutomaticSpellingCorrectionEnabled:NO];
     [[self logTextView] setContinuousSpellCheckingEnabled:NO];
     [[self logTextView] setFont:[NSFont fontWithName:@"Andale Mono" size:14]];
+    
+    _lineNumberView = [[NoodleLineNumberView alloc] initWithScrollView:[[self logTextView] enclosingScrollView]];
+    [[[self logTextView] enclosingScrollView] setVerticalRulerView:_lineNumberView];
+    [[[self logTextView] enclosingScrollView] setHasHorizontalRuler:NO];
+    [[[self logTextView] enclosingScrollView] setHasVerticalRuler:YES];
+    [[[self logTextView] enclosingScrollView] setRulersVisible:YES];
+	   
+    _lineNumberView = [[NoodleLineNumberView alloc] initWithScrollView:[[self rawSqlTextView] enclosingScrollView]];
+    [[[self rawSqlTextView] enclosingScrollView] setVerticalRulerView:_lineNumberView];
+    [[[self rawSqlTextView] enclosingScrollView] setHasHorizontalRuler:NO];
+    [[[self rawSqlTextView] enclosingScrollView] setHasVerticalRuler:YES];
+    [[[self rawSqlTextView] enclosingScrollView] setRulersVisible:YES];
     
     [[self rawSqlTextView] setFont:[NSFont fontWithName:@"Andale Mono" size:14]];
 }
@@ -64,7 +79,7 @@
     }
     NSDate *now = [NSDate date];
     
-    text = [[[self dateFormatter] stringFromDate:now] stringByAppendingString:[NSString stringWithFormat:@"    %@", text]];
+    text = [[[self dateFormatter] stringFromDate:now] stringByAppendingString:[NSString stringWithFormat:@" %@", text]];
     
     dispatch_async(dispatch_get_main_queue(), ^{
         NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:[text stringByAppendingString:@"\n"]];
@@ -100,6 +115,16 @@
         [expression enumerateMatchesInString:text options:0 range:range usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
             NSRange range = [result rangeAtIndex:0];
             [attributedString addAttribute:NSForegroundColorAttributeName value:[NSColor redColor] range:range];
+        }];
+        
+        pattern = @"(1[012]|[1-9]):[0-5][0-9]:[0-5][0-9](\\s)?(?i)(am|pm)";
+        expression = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
+        range = NSMakeRange(0, [text length]);
+        
+        [expression enumerateMatchesInString:text options:0 range:range usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
+            NSRange range = [result rangeAtIndex:0];
+            [attributedString addAttribute:NSForegroundColorAttributeName value:[NSColor darkGrayColor] range:range];
+            [attributedString addAttribute:NSBackgroundColorAttributeName value:[NSColor colorWithCalibratedWhite: 0.85 alpha: 1.0] range:range];
         }];
         
         [[[self logTextView] textStorage] appendAttributedString:attributedString];
