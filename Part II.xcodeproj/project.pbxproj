@@ -29,6 +29,8 @@
 		2925DE82182C003F003CF840 /* libsqlite3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2925DE81182C003F003CF840 /* libsqlite3.dylib */; };
 		29482E84182D9B8900150FB3 /* NoodleLineNumberMarker.m in Sources */ = {isa = PBXBuildFile; fileRef = 29482E81182D9B8900150FB3 /* NoodleLineNumberMarker.m */; };
 		29482E85182D9B8900150FB3 /* NoodleLineNumberView.m in Sources */ = {isa = PBXBuildFile; fileRef = 29482E83182D9B8900150FB3 /* NoodleLineNumberView.m */; };
+		29778F96182DEB1E008976DD /* OpenDatabaseWindowController.m in Sources */ = {isa = PBXBuildFile; fileRef = 29778F94182DEB1E008976DD /* OpenDatabaseWindowController.m */; };
+		29778F97182DEB1E008976DD /* OpenDatabase.xib in Resources */ = {isa = PBXBuildFile; fileRef = 29778F95182DEB1E008976DD /* OpenDatabase.xib */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -75,6 +77,9 @@
 		29482E81182D9B8900150FB3 /* NoodleLineNumberMarker.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NoodleLineNumberMarker.m; sourceTree = "<group>"; };
 		29482E82182D9B8900150FB3 /* NoodleLineNumberView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NoodleLineNumberView.h; sourceTree = "<group>"; };
 		29482E83182D9B8900150FB3 /* NoodleLineNumberView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NoodleLineNumberView.m; sourceTree = "<group>"; };
+		29778F93182DEB1E008976DD /* OpenDatabaseWindowController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OpenDatabaseWindowController.h; sourceTree = "<group>"; };
+		29778F94182DEB1E008976DD /* OpenDatabaseWindowController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OpenDatabaseWindowController.m; sourceTree = "<group>"; };
+		29778F95182DEB1E008976DD /* OpenDatabase.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = OpenDatabase.xib; sourceTree = "<group>"; };
 		B5E1AD6D1D2C4BDBBBACE4E7 /* libPods.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPods.a; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -200,6 +205,7 @@
 			children = (
 				2925DE4F182BE920003CF840 /* MainMenu.xib */,
 				2925DE71182BE948003CF840 /* MainWindow.xib */,
+				29778F95182DEB1E008976DD /* OpenDatabase.xib */,
 			);
 			name = "User Interface";
 			sourceTree = "<group>";
@@ -222,6 +228,8 @@
 			children = (
 				2925DE7D182BF2AF003CF840 /* MainWindowController.h */,
 				2925DE7E182BF2AF003CF840 /* MainWindowController.m */,
+				29778F93182DEB1E008976DD /* OpenDatabaseWindowController.h */,
+				29778F94182DEB1E008976DD /* OpenDatabaseWindowController.m */,
 			);
 			name = "Window Controllers";
 			sourceTree = "<group>";
@@ -318,6 +326,7 @@
 				2925DE72182BE948003CF840 /* MainWindow.xib in Resources */,
 				2925DE53182BE920003CF840 /* Images.xcassets in Resources */,
 				2925DE4B182BE920003CF840 /* Credits.rtf in Resources */,
+				29778F97182DEB1E008976DD /* OpenDatabase.xib in Resources */,
 				2925DE74182BE9E7003CF840 /* Export.tiff in Resources */,
 				2925DE51182BE920003CF840 /* MainMenu.xib in Resources */,
 				2925DE7A182BEA02003CF840 /* BrushVac.tiff in Resources */,
@@ -341,6 +350,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				29778F96182DEB1E008976DD /* OpenDatabaseWindowController.m in Sources */,
 				2925DE7F182BF2AF003CF840 /* MainWindowController.m in Sources */,
 				2925DE4E182BE920003CF840 /* AppDelegate.m in Sources */,
 				2925DE47182BE920003CF840 /* main.m in Sources */,

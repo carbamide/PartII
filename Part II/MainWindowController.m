@@ -23,18 +23,22 @@
 @property (strong, nonatomic) NSMutableArray *sqlDataArray;
 @property (strong, nonatomic) NSDateFormatter *dateFormatter;
 @property (strong, nonatomic) NoodleLineNumberView	*lineNumberView;
+@property (strong, nonatomic) NSURL *databaseURL;
 
 @end
 
 @implementation MainWindowController
 
+@synthesize databaseURL = _databaseURL;
+
 #pragma mark -
 #pragma mark Window Lifecycle
 
-- (id)initWithWindow:(NSWindow *)window
+- (id)initWithWindowNibName:(NSString *)windowNibName databaseURL:(NSURL *)dbURL;
 {
-    self = [super initWithWindow:window];
+    self = [super initWithWindowNibName:windowNibName];
     if (self) {
+        _databaseURL = dbURL;
         _dateFormatter = [[NSDateFormatter alloc] init];
         [_dateFormatter setTimeStyle:NSDateFormatterMediumStyle];
     }
@@ -45,10 +49,24 @@
 {
     [super windowDidLoad];
     
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(windowWillClose:) name:NSWindowWillCloseNotification object:nil];
+    
+    [self openDatabase:[self databaseURL]];
+    
     [[self logTextView] setAutomaticTextReplacementEnabled:NO];
     [[self logTextView] setAutomaticSpellingCorrectionEnabled:NO];
     [[self logTextView] setContinuousSpellCheckingEnabled:NO];
     [[self logTextView] setFont:[NSFont fontWithName:@"Andale Mono" size:14]];
+    
+    [[self rawSqlTextView] setAutomaticTextReplacementEnabled:NO];
+    [[self rawSqlTextView] setAutomaticSpellingCorrectionEnabled:NO];
+    [[self rawSqlTextView] setContinuousSpellCheckingEnabled:NO];
+    [[self rawSqlTextView] setFont:[NSFont fontWithName:@"Andale Mono" size:14]];
+    
+    [[self schemaTextView] setAutomaticTextReplacementEnabled:NO];
+    [[self schemaTextView] setAutomaticSpellingCorrectionEnabled:NO];
+    [[self schemaTextView] setContinuousSpellCheckingEnabled:NO];
+    [[self schemaTextView] setFont:[NSFont fontWithName:@"Andale Mono" size:14]];
     
     [[self logTextView] setTextContainerInset:NSMakeSize(-5, 0)];
     
@@ -57,20 +75,56 @@
     [[[self logTextView] enclosingScrollView] setHasHorizontalRuler:NO];
     [[[self logTextView] enclosingScrollView] setHasVerticalRuler:YES];
     [[[self logTextView] enclosingScrollView] setRulersVisible:YES];
-	   
+    
     _lineNumberView = [[NoodleLineNumberView alloc] initWithScrollView:[[self rawSqlTextView] enclosingScrollView]];
     [[[self rawSqlTextView] enclosingScrollView] setVerticalRulerView:_lineNumberView];
     [[[self rawSqlTextView] enclosingScrollView] setHasHorizontalRuler:NO];
     [[[self rawSqlTextView] enclosingScrollView] setHasVerticalRuler:YES];
     [[[self rawSqlTextView] enclosingScrollView] setRulersVisible:YES];
     
-    [[self rawSqlTextView] setFont:[NSFont fontWithName:@"Andale Mono" size:14]];
+    _lineNumberView = [[NoodleLineNumberView alloc] initWithScrollView:[[self schemaTextView] enclosingScrollView]];
+    [[[self schemaTextView] enclosingScrollView] setVerticalRulerView:_lineNumberView];
+    [[[self schemaTextView] enclosingScrollView] setHasHorizontalRuler:NO];
+    [[[self schemaTextView] enclosingScrollView] setHasVerticalRuler:YES];
+    [[[self schemaTextView] enclosingScrollView] setRulersVisible:YES];
+}
+
+-(void)windowWillClose:(NSNotification *)aNotification
+{
+    NSWindow *window = [aNotification object];
+    
+    if (window == [self window]) {
+        sqlite3_close(_database);
+        
+    }
 }
 
 #pragma mark -
 #pragma mark Methods
 
 -(void)appendTextToLog:(NSString *)text color:(NSColor *)color
+{
+    NSDate *now = [NSDate date];
+    
+    text = [[[self dateFormatter] stringFromDate:now] stringByAppendingString:[NSString stringWithFormat:@" %@", text]];
+    
+    NSMutableAttributedString *attributedString = [self colorizeText:text color:nil];
+    
+    NSString *pattern = @"(1[012]|[1-9]):[0-5][0-9]:[0-5][0-9](\\s)?(?i)(am|pm)";
+    NSRegularExpression *expression = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
+    NSRange range = NSMakeRange(0, [text length]);
+    
+    [expression enumerateMatchesInString:text options:0 range:range usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
+        NSRange range = [result rangeAtIndex:0];
+        [attributedString addAttribute:NSForegroundColorAttributeName value:[NSColor darkGrayColor] range:range];
+        [attributedString addAttribute:NSBackgroundColorAttributeName value:[NSColor colorWithCalibratedWhite: 0.85 alpha: 1.0] range:range];
+    }];
+    
+    [[[self logTextView] textStorage] appendAttributedString:attributedString];
+    [[self logTextView] scrollRangeToVisible:NSMakeRange([[[self logTextView] string] length], 0)];
+}
+
+-(NSMutableAttributedString *)colorizeText:(NSString *)text color:(NSColor *)color
 {
     if (!text) {
         text = @"ERROR";
@@ -79,29 +133,26 @@
     if (!color) {
         color = [NSColor blackColor];
     }
-    NSDate *now = [NSDate date];
     
-    text = [[[self dateFormatter] stringFromDate:now] stringByAppendingString:[NSString stringWithFormat:@" %@", text]];
+    NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:[text stringByAppendingString:@"\n"]];
     
-    dispatch_async(dispatch_get_main_queue(), ^{
-        NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:[text stringByAppendingString:@"\n"]];
-        
-        [attributedString addAttribute:NSFontAttributeName value:[NSFont fontWithName:@"Andale Mono" size:14] range:NSMakeRange(0, [text length])];
-        
-        if (color) {
-            [attributedString addAttribute:NSForegroundColorAttributeName value:color range:NSMakeRange(0, [text length])];
-        }
-        
-        NSString *pattern = @"select|from|where|pragma";
-        NSRegularExpression *expression = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
-        NSRange range = NSMakeRange(0, [text length]);
-        
-        [expression enumerateMatchesInString:text options:0 range:range usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
-            NSRange range = [result rangeAtIndex:0];
-            [attributedString addAttribute:NSForegroundColorAttributeName value:[NSColor blueColor] range:range];
-        }];
-        
-        pattern = [[[self tablesListArray] componentsJoinedByString:@"|"] stringByAppendingString:@"|sqlite_master"];
+    [attributedString addAttribute:NSFontAttributeName value:[NSFont fontWithName:@"Andale Mono" size:14] range:NSMakeRange(0, [text length])];
+    
+    if (color) {
+        [attributedString addAttribute:NSForegroundColorAttributeName value:color range:NSMakeRange(0, [text length])];
+    }
+    
+    NSString *pattern = [[[self sqlKeywords] componentsJoinedByString:@"\\b|\\b"] stringByAppendingString:@"\\b"];
+    NSRegularExpression *expression = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
+    NSRange range = NSMakeRange(0, [text length]);
+    
+    [expression enumerateMatchesInString:text options:0 range:range usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
+        NSRange range = [result rangeAtIndex:0];
+        [attributedString addAttribute:NSForegroundColorAttributeName value:[NSColor blueColor] range:range];
+    }];
+    
+    if ([self tablesListArray]) {
+        pattern = [[[self tablesListArray] componentsJoinedByString:@"\\b|\\b"] stringByAppendingString:@"|sqlite_master\\b"];
         expression = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
         range = NSMakeRange(0, [text length]);
         
@@ -109,29 +160,66 @@
             NSRange range = [result rangeAtIndex:0];
             [attributedString addAttribute:NSForegroundColorAttributeName value:[NSColor orangeColor] range:range];
         }];
+    }
+    
+    pattern = @"'(.*)'";
+    expression = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
+    range = NSMakeRange(0, [text length]);
+    
+    [expression enumerateMatchesInString:text options:0 range:range usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
+        NSRange range = [result rangeAtIndex:0];
+        [attributedString addAttribute:NSForegroundColorAttributeName value:[NSColor redColor] range:range];
+    }];
+    
+    return attributedString;
+}
+
+-(void)notImplemented
+{
+    NSAlert *errorAlert = [NSAlert alertWithMessageText:@"Not Implemented"
+                                          defaultButton:@"OK"
+                                        alternateButton:nil
+                                            otherButton:nil
+                              informativeTextWithFormat:@"This function is not yet implemented."];
+    
+    [errorAlert runModal];
+}
+
+-(void)openDatabase:(NSURL *)url
+{
+    [self setTablesListArray:nil];
+    [self setTableColumnsArray:nil];
+    [self setTableColumnTypeArray:nil];
+    [self setCurrentTable:nil];
+    [self setTableDataArray:nil];
+    [self setSqlDataArray:nil];
+    
+    if (sqlite3_open([[[self databaseURL] path] UTF8String], &_database) != SQLITE_OK) {
+        NSAlert *errorAlert = [NSAlert alertWithMessageText:@"Error"
+                                              defaultButton:@"OK"
+                                            alternateButton:nil
+                                                otherButton:nil
+                                  informativeTextWithFormat:@"Unable to open the database.  Sorry!"];
         
-        pattern = @"'(.*)'";
-        expression = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
-        range = NSMakeRange(0, [text length]);
+        [errorAlert runModal];
         
-        [expression enumerateMatchesInString:text options:0 range:range usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
-            NSRange range = [result rangeAtIndex:0];
-            [attributedString addAttribute:NSForegroundColorAttributeName value:[NSColor redColor] range:range];
-        }];
-        
-        pattern = @"(1[012]|[1-9]):[0-5][0-9]:[0-5][0-9](\\s)?(?i)(am|pm)";
-        expression = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
-        range = NSMakeRange(0, [text length]);
-        
-        [expression enumerateMatchesInString:text options:0 range:range usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
-            NSRange range = [result rangeAtIndex:0];
-            [attributedString addAttribute:NSForegroundColorAttributeName value:[NSColor darkGrayColor] range:range];
-            [attributedString addAttribute:NSBackgroundColorAttributeName value:[NSColor colorWithCalibratedWhite: 0.85 alpha: 1.0] range:range];
-        }];
-        
-        [[[self logTextView] textStorage] appendAttributedString:attributedString];
-        [[self logTextView] scrollRangeToVisible:NSMakeRange([[[self logTextView] string] length], 0)];
-    });
+        return;
+    }
+    
+    [self setTablesListArray:[self fetchTableNames]];
+    [[self tableListSourceView] reloadData];
+}
+
+-(void)setDatabaseURL:(NSURL *)databaseURL
+{
+    _databaseURL = databaseURL;
+    
+    [self openDatabase:[self databaseURL]];
+}
+
+-(NSURL *)databaseURL
+{
+    return _databaseURL;
 }
 
 #pragma mark -
@@ -164,13 +252,7 @@
 
 -(IBAction)export:(id)sender
 {
-    NSAlert *errorAlert = [NSAlert alertWithMessageText:@"Not Implemented"
-                                          defaultButton:@"OK"
-                                        alternateButton:nil
-                                            otherButton:nil
-                              informativeTextWithFormat:@"This function is not yet implemented."];
-    
-    [errorAlert runModal];
+    [self notImplemented];
 }
 
 -(IBAction)clearLog:(id)sender
@@ -185,6 +267,33 @@
     }
     
     [self performSqlQuery:[[self rawSqlTextView] string]];
+}
+
+-(IBAction)actionSegmentedControlAction:(id)sender
+{
+    NSSegmentedControl *control = sender;
+    
+    if ([control selectedSegment] == 0) {
+        [self notImplemented];
+    }
+    else {
+        [NSMenu popUpContextMenu:[self tableMenu] withEvent:nil forView:sender];
+    }
+}
+
+-(IBAction)rename:(id)sender
+{
+    [self notImplemented];
+}
+
+-(IBAction)alter:(id)sender
+{
+    [self notImplemented];
+}
+
+-(IBAction)drop:(id)sender
+{
+    [self notImplemented];
 }
 
 #pragma mark -
@@ -224,7 +333,7 @@
     NSString *sql = [NSString stringWithFormat:@"SELECT * FROM %@;", table];
     
     [self appendTextToLog:sql color:nil];
-
+    
     sqlite3_stmt *statement;
     
     NSMutableArray *finalArray = [NSMutableArray array];
@@ -273,8 +382,6 @@
             
             for (int index = 0; index <= columnCount; index++) {
                 char *text = (char *)sqlite3_column_text(statement, index);
-                
-
                 
                 if (text != NULL) {
                     [dictionary addEntriesFromDictionary:@{[NSNumber numberWithInt:index]: [NSString stringWithUTF8String:(char *)sqlite3_column_text(statement, index)]}];
@@ -347,7 +454,31 @@
         [[self dataTableView] addTableColumn:column[i]];
     }
     
+    
     return @[result, typeResultSet];
+}
+
+-(NSString *)schemaForTable:(NSString *)tableName
+{
+    sqlite3_stmt *statement;
+    
+    NSString *result = nil;
+    
+    NSString *sql = [NSString stringWithFormat:@"SELECT sql from sqlite_master where tbl_name = '%@'", tableName];
+    
+    [self appendTextToLog:sql color:nil];
+    
+    if (sqlite3_prepare_v2(_database, [sql UTF8String], -1, &statement, NULL) == SQLITE_OK) {
+        while(sqlite3_step(statement) == SQLITE_ROW) {
+            char *text = (char *)sqlite3_column_text(statement, 0);
+            
+            result = [NSString stringWithUTF8String:text];
+        }
+    }
+    
+    NSLog(@"%@", result);
+    
+    return result;
 }
 
 #pragma mark -
@@ -402,6 +533,10 @@
         
         [self setCurrentTable:selectedItem];
         
+        [[self schemaTextView] setString:@""];
+        
+        [[[self schemaTextView] textStorage] appendAttributedString:[self colorizeText:[self schemaForTable:[self currentTable]] color:nil]];
+
         [self selectAllFromTable:[self currentTable]];
         [[self dataTableView] reloadData];
         
@@ -475,43 +610,167 @@
 
 -(void)textDidChange:(NSNotification *)notification
 {
-//    NSRange wordRange = [[[self rawSqlTextView] string] rangeOfString:@" " options:NSBackwardsSearch];
-//    
-//    NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] init];
-//    NSString *text = [[self rawSqlTextView] string];
-//    
-//    NSString *pattern = @"select|from|where|pragma";
-//    NSRegularExpression *expression = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
-//    NSRange range = NSMakeRange(0, [text length]);
-//    
-//    [expression enumerateMatchesInString:text options:0 range:range usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
-//        NSRange range = [result rangeAtIndex:0];
-//        [attributedString addAttribute:NSForegroundColorAttributeName value:[NSColor blueColor] range:range];
-//    }];
-//    
-//    pattern = [[[self tablesListArray] componentsJoinedByString:@"|"] stringByAppendingString:@"|sqlite_master"];
-//    expression = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
-//    range = NSMakeRange(0, [text length]);
-//    
-//    [expression enumerateMatchesInString:text options:0 range:range usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
-//        NSRange range = [result rangeAtIndex:0];
-//        [attributedString addAttribute:NSForegroundColorAttributeName value:[NSColor orangeColor] range:range];
-//    }];
-//    
-//    pattern = @"'(.*)'";
-//    expression = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
-//    range = NSMakeRange(0, [text length]);
-//    
-//    [expression enumerateMatchesInString:text options:0 range:range usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
-//        NSRange range = [result rangeAtIndex:0];
-//        [attributedString addAttribute:NSForegroundColorAttributeName value:[NSColor redColor] range:range];
-//    }];
-//    
-//    if ([attributedString length] > 0) {
-//        [[[self rawSqlTextView] textStorage] replaceCharactersInRange:NSMakeRange(0, [text length]) withAttributedString:attributedString];
-//    }
-//    
-//    [[[self rawSqlTextView] textStorage] replaceCharactersInRange:wordRange withAttributedString:attributedString];
+    //    NSRange wordRange = [[[self rawSqlTextView] string] rangeOfString:@" " options:NSBackwardsSearch];
+    //
+    //    NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] init];
+    //    NSString *text = [[self rawSqlTextView] string];
+    //
+    //    NSString *pattern = @"select|from|where|pragma";
+    //    NSRegularExpression *expression = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
+    //    NSRange range = NSMakeRange(0, [text length]);
+    //
+    //    [expression enumerateMatchesInString:text options:0 range:range usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
+    //        NSRange range = [result rangeAtIndex:0];
+    //        [attributedString addAttribute:NSForegroundColorAttributeName value:[NSColor blueColor] range:range];
+    //    }];
+    //
+    //    pattern = [[[self tablesListArray] componentsJoinedByString:@"|"] stringByAppendingString:@"|sqlite_master"];
+    //    expression = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
+    //    range = NSMakeRange(0, [text length]);
+    //
+    //    [expression enumerateMatchesInString:text options:0 range:range usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
+    //        NSRange range = [result rangeAtIndex:0];
+    //        [attributedString addAttribute:NSForegroundColorAttributeName value:[NSColor orangeColor] range:range];
+    //    }];
+    //
+    //    pattern = @"'(.*)'";
+    //    expression = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
+    //    range = NSMakeRange(0, [text length]);
+    //
+    //    [expression enumerateMatchesInString:text options:0 range:range usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
+    //        NSRange range = [result rangeAtIndex:0];
+    //        [attributedString addAttribute:NSForegroundColorAttributeName value:[NSColor redColor] range:range];
+    //    }];
+    //
+    //    if ([attributedString length] > 0) {
+    //        [[[self rawSqlTextView] textStorage] replaceCharactersInRange:NSMakeRange(0, [text length]) withAttributedString:attributedString];
+    //    }
+    //
+    //    [[[self rawSqlTextView] textStorage] replaceCharactersInRange:wordRange withAttributedString:attributedString];
 }
 
+-(NSArray *)sqlKeywords
+{
+    return @[@"ABORT",
+             @"ACTION",
+             @"ADD",
+             @"AFTER",
+             @"ALL",
+             @"ALTER",
+             @"ANALYZE",
+             @"AND",
+             @"AS",
+             @"ASC",
+             @"ATTACH",
+             @"AUTOINCREMENT",
+             @"BEFORE",
+             @"BEGIN",
+             @"BETWEEN",
+             @"BY",
+             @"CASCADE",
+             @"CASE",
+             @"CAST",
+             @"CHECK",
+             @"COLLATE",
+             @"COLUMN",
+             @"COMMIT",
+             @"CONFLICT",
+             @"CONSTRAINT",
+             @"CREATE",
+             @"CROSS",
+             @"CURRENT_DATE",
+             @"CURRENT_TIME",
+             @"CURRENT_TIMESTAMP",
+             @"DATABASE",
+             @"DEFAULT",
+             @"DEFERRABLE",
+             @"DEFERRED",
+             @"DELETE",
+             @"DESC",
+             @"DETACH",
+             @"DISTINCT",
+             @"DROP",
+             @"EACH",
+             @"ELSE",
+             @"END",
+             @"ESCAPE",
+             @"EXCEPT",
+             @"EXCLUSIVE",
+             @"EXISTS",
+             @"EXPLAIN",
+             @"FAIL",
+             @"FOR",
+             @"FOREIGN",
+             @"FROM",
+             @"FULL",
+             @"GLOB",
+             @"GROUP",
+             @"HAVING",
+             @"IF",
+             @"IGNORE",
+             @"IMMEDIATE",
+             @"IN",
+             @"INDEX",
+             @"INDEXED",
+             @"INITIALLY",
+             @"INNER",
+             @"INSERT",
+             @"INSTEAD",
+             @"INTERSECT",
+             @"INTO",
+             @"IS",
+             @"ISNULL",
+             @"JOIN",
+             @"KEY",
+             @"LEFT",
+             @"LIKE",
+             @"LIMIT",
+             @"MATCH",
+             @"NATURAL",
+             @"NO",
+             @"NOT",
+             @"NOTNULL",
+             @"NULL",
+             @"OF",
+             @"OFFSET",
+             @"ON",
+             @"OR",
+             @"ORDER",
+             @"OUTER",
+             @"PLAN",
+             @"PRAGMA",
+             @"PRIMARY",
+             @"QUERY",
+             @"RAISE",
+             @"REFERENCES",
+             @"REGEXP",
+             @"REINDEX",
+             @"RELEASE",
+             @"RENAME",
+             @"REPLACE",
+             @"RESTRICT",
+             @"RIGHT",
+             @"ROLLBACK",
+             @"ROW",
+             @"SAVEPOINT",
+             @"SELECT",
+             @"SET",
+             @"TABLE",
+             @"TEMP",
+             @"TEMPORARY",
+             @"THEN",
+             @"TO",
+             @"TRANSACTION",
+             @"TRIGGER",
+             @"UNION",
+             @"UNIQUE",
+             @"UPDATE",
+             @"USING",
+             @"VACUUM",
+             @"VALUES",
+             @"VIEW",
+             @"VIRTUAL",
+             @"WHEN",
+             @"WHERE"];
+}
 @end

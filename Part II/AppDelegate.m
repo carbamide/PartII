@@ -7,14 +7,16 @@
 //
 
 #import "AppDelegate.h"
+#import "OpenDatabaseWindowController.h"
+#import "MainWindowController.h"
 
 @implementation AppDelegate
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
-    [self setMainWindowController:[[MainWindowController alloc] initWithWindowNibName:@"MainWindow"]];
+    [self setOpenDatabaseWindowController:[[OpenDatabaseWindowController alloc] initWithWindowNibName:@"OpenDatabase"]];
     
-    [[self mainWindowController] showWindow:self];
+    [[self openDatabaseWindowController] showWindow:self];
 }
 
 @end

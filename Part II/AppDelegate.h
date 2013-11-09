@@ -7,10 +7,12 @@
 //
 
 #import <Cocoa/Cocoa.h>
-#import "MainWindowController.h"
+
+@class OpenDatabaseWindowController, MainWindowController;
 
 @interface AppDelegate : NSObject <NSApplicationDelegate>
 
 @property (strong, nonatomic) MainWindowController *mainWindowController;
+@property (strong, nonatomic) OpenDatabaseWindowController *openDatabaseWindowController;
 
 @end
