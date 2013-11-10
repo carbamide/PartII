@@ -9,6 +9,8 @@
 #import "MainWindowController.h"
 #import <sqlite3.h>
 #import "NoodleLineNumberView.h"
+#import "AppDelegate.h"
+#import "OpenDatabaseWindowController.h"
 
 @interface MainWindowController ()
 {
@@ -96,6 +98,9 @@
     if (window == [self window]) {
         sqlite3_close(_database);
         
+        AppDelegate *appDelegate = (AppDelegate *)[NSApp delegate];
+        
+        [[appDelegate openDatabaseWindowController] showWindow:self];
     }
 }
 
@@ -475,9 +480,7 @@
             result = [NSString stringWithUTF8String:text];
         }
     }
-    
-    NSLog(@"%@", result);
-    
+        
     return result;
 }
 

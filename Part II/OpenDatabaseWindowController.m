@@ -32,7 +32,16 @@
 {
     [super windowDidLoad];
     
-    // Implement this method to handle any initialization after your window controller's window has been loaded from its nib file.
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(windowWillClose:) name:NSWindowWillCloseNotification object:nil];
+}
+
+-(void)windowWillClose:(NSNotification *)aNotification
+{
+    NSWindow *window = [aNotification object];
+    
+    if (window == [self window]) {
+        NSLog(@"Closing the open dialog");
+    }
 }
 
 #pragma mark -
