@@ -10,6 +10,13 @@
 
 @interface MainWindowController : NSWindowController <NSOutlineViewDelegate, NSOutlineViewDataSource, NSTableViewDelegate, NSTableViewDataSource, NSTextDelegate>
 
+@property (strong, nonatomic) NSArray *tablesListArray;
+@property (strong, nonatomic) NSArray *tableColumnsArray;
+@property (strong, nonatomic) NSArray *tableColumnTypeArray;
+@property (strong, nonatomic) NSString *currentTable;
+@property (strong, nonatomic) NSMutableArray *tableDataArray;
+@property (strong, nonatomic) NSMutableArray *sqlDataArray;
+
 @property (strong) IBOutlet NSOutlineView *tableListSourceView;
 @property (strong) IBOutlet NSSegmentedControl *viewSelectorSegmentedControl;
 @property (strong) IBOutlet NSTableView *schemaTableView;
@@ -25,6 +32,7 @@
 
 
 -(id)initWithWindowNibName:(NSString *)windowNibName databaseURL:(NSURL *)dbURL;;
+-(void)appendTextToLog:(NSString *)text color:(NSColor *)color;
 
 -(IBAction)import:(id)sender;
 -(IBAction)export:(id)sender;

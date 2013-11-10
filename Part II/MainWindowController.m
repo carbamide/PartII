@@ -11,18 +11,10 @@
 #import "NoodleLineNumberView.h"
 #import "AppDelegate.h"
 #import "OpenDatabaseWindowController.h"
+#import "SQLManager.h"
 
 @interface MainWindowController ()
-{
-    sqlite3 *_database;
-}
 
-@property (strong, nonatomic) NSArray *tablesListArray;
-@property (strong, nonatomic) NSArray *tableColumnsArray;
-@property (strong, nonatomic) NSArray *tableColumnTypeArray;
-@property (strong, nonatomic) NSString *currentTable;
-@property (strong, nonatomic) NSMutableArray *tableDataArray;
-@property (strong, nonatomic) NSMutableArray *sqlDataArray;
 @property (strong, nonatomic) NSDateFormatter *dateFormatter;
 @property (strong, nonatomic) NoodleLineNumberView	*lineNumberView;
 @property (strong, nonatomic) NSURL *databaseURL;
@@ -50,6 +42,8 @@
 - (void)windowDidLoad
 {
     [super windowDidLoad];
+    
+    [[SQLManager sharedManager] setMainWindowController:self];
     
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(windowWillClose:) name:NSWindowWillCloseNotification object:nil];
     
@@ -96,8 +90,6 @@
     NSWindow *window = [aNotification object];
     
     if (window == [self window]) {
-        sqlite3_close(_database);
-        
         AppDelegate *appDelegate = (AppDelegate *)[NSApp delegate];
         
         [[appDelegate openDatabaseWindowController] showWindow:self];
@@ -147,7 +139,7 @@
         [attributedString addAttribute:NSForegroundColorAttributeName value:color range:NSMakeRange(0, [text length])];
     }
     
-    NSString *pattern = [[[self sqlKeywords] componentsJoinedByString:@"\\b|\\b"] stringByAppendingString:@"\\b"];
+    NSString *pattern = [[[[SQLManager sharedManager] sqlKeywords] componentsJoinedByString:@"\\b|\\b"] stringByAppendingString:@"\\b"];
     NSRegularExpression *expression = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:nil];
     NSRange range = NSMakeRange(0, [text length]);
     
@@ -199,20 +191,8 @@
     [self setTableDataArray:nil];
     [self setSqlDataArray:nil];
     
-    if (sqlite3_open([[[self databaseURL] path] UTF8String], &_database) != SQLITE_OK) {
-        NSAlert *errorAlert = [NSAlert alertWithMessageText:@"Error"
-                                              defaultButton:@"OK"
-                                            alternateButton:nil
-                                                otherButton:nil
-                                  informativeTextWithFormat:@"Unable to open the database.  Sorry!"];
-        
-        [errorAlert runModal];
-        
-        return;
-    }
-    
-    [self setTablesListArray:[self fetchTableNames]];
-    [[self tableListSourceView] reloadData];
+    [[SQLManager sharedManager] setDatabaseURL:url];
+    [[SQLManager sharedManager] openDatabase];
 }
 
 -(void)setDatabaseURL:(NSURL *)databaseURL
@@ -232,27 +212,7 @@
 
 -(IBAction)import:(id)sender
 {
-    NSOpenPanel *openPanel = [NSOpenPanel openPanel];
-    
-    if ([openPanel runModal] == NSOKButton) {
-        NSURL *selectedFilePath = [openPanel URL];
-        
-        if (sqlite3_open([[selectedFilePath path] UTF8String], &_database) != SQLITE_OK) {
-            NSAlert *errorAlert = [NSAlert alertWithMessageText:@"Error"
-                                                  defaultButton:@"OK"
-                                                alternateButton:nil
-                                                    otherButton:nil
-                                      informativeTextWithFormat:@"Unable to open the database.  Sorry!"];
-            
-            [errorAlert runModal];
-            
-            return;
-        }
-        
-        [self setTablesListArray:[self fetchTableNames]];
-        
-        [[self tableListSourceView] reloadData];
-    }
+    [self notImplemented];
 }
 
 -(IBAction)export:(id)sender
@@ -271,7 +231,10 @@
         [[self sqlQueryTableView] removeTableColumn:[[[self sqlQueryTableView] tableColumns] lastObject]];
     }
     
-    [self performSqlQuery:[[self rawSqlTextView] string]];
+    [self setSqlDataArray:[[[SQLManager sharedManager] performSqlQuery:[[self rawSqlTextView] string]] mutableCopy]];
+    
+    [[self sqlQueryTableView] reloadData];
+
 }
 
 -(IBAction)actionSegmentedControlAction:(id)sender
@@ -299,189 +262,6 @@
 -(IBAction)drop:(id)sender
 {
     [self notImplemented];
-}
-
-#pragma mark -
-#pragma mark Database Helper Methods
-
--(NSMutableArray *)fetchTableNames
-{
-    sqlite3_stmt* statement;
-    
-    NSString *sql = @"SELECT name FROM sqlite_master WHERE type='table';";
-    
-    [self appendTextToLog:sql color:nil];
-    
-    int retVal = sqlite3_prepare_v2(_database,
-                                    [sql UTF8String],
-                                    -1,
-                                    &statement,
-                                    NULL);
-    
-    NSMutableArray *selectedRecords = [NSMutableArray array];
-    
-    if (retVal == SQLITE_OK) {
-        while(sqlite3_step(statement) == SQLITE_ROW) {
-            NSString *value = [NSString stringWithCString:(const char *)sqlite3_column_text(statement, 0) encoding:NSUTF8StringEncoding];
-            [selectedRecords addObject:value];
-        }
-    }
-    
-    sqlite3_clear_bindings(statement);
-    sqlite3_finalize(statement);
-    
-    return selectedRecords;
-}
-
--(void)selectAllFromTable:(NSString *)table
-{
-    NSString *sql = [NSString stringWithFormat:@"SELECT * FROM %@;", table];
-    
-    [self appendTextToLog:sql color:nil];
-    
-    sqlite3_stmt *statement;
-    
-    NSMutableArray *finalArray = [NSMutableArray array];
-    
-    if (sqlite3_prepare_v2(_database, [sql UTF8String], -1, &statement, NULL) == SQLITE_OK) {
-        int columnCount = sqlite3_column_count(statement);
-        
-        while(sqlite3_step(statement) == SQLITE_ROW) {
-            NSMutableDictionary *dictionary = [NSMutableDictionary dictionary];
-            
-            for (int index = 0; index <= columnCount; index++) {
-                char *text = (char *)sqlite3_column_text(statement, index);
-                
-                if (text != NULL) {
-                    [dictionary addEntriesFromDictionary:@{[NSNumber numberWithInt:index]: [NSString stringWithUTF8String:(char *)sqlite3_column_text(statement, index)]}];
-                }
-                else {
-                    [dictionary addEntriesFromDictionary:@{[NSNumber numberWithInt:index]: @"NULL"}];
-                }
-            }
-            
-            [finalArray addObject:dictionary];
-        }
-    }
-    
-    [self setTableDataArray:finalArray];
-}
-
--(void)performSqlQuery:(NSString *)sql
-{
-    [self appendTextToLog:sql color:nil];
-    
-    sqlite3_stmt *statement;
-    
-    NSMutableArray *finalArray = [NSMutableArray array];
-    
-    NSString *tableName = nil;
-    
-    if (sqlite3_prepare_v2(_database, [sql UTF8String], -1, &statement, NULL) == SQLITE_OK) {
-        int columnCount = sqlite3_column_count(statement);
-        
-        tableName = [NSString stringWithUTF8String:(char *)sqlite3_column_table_name(statement, 0)];
-        
-        while(sqlite3_step(statement) == SQLITE_ROW) {
-            NSMutableDictionary *dictionary = [NSMutableDictionary dictionary];
-            
-            for (int index = 0; index <= columnCount; index++) {
-                char *text = (char *)sqlite3_column_text(statement, index);
-                
-                if (text != NULL) {
-                    [dictionary addEntriesFromDictionary:@{[NSNumber numberWithInt:index]: [NSString stringWithUTF8String:(char *)sqlite3_column_text(statement, index)]}];
-                }
-                else {
-                    [dictionary addEntriesFromDictionary:@{[NSNumber numberWithInt:index]: @"NULL"}];
-                }
-            }
-            
-            [finalArray addObject:dictionary];
-        }
-    }
-    
-    sqlite3_stmt *sqlStatement;
-    
-    NSMutableArray *result = [NSMutableArray array];
-    
-    sql = [NSString stringWithFormat:@"PRAGMA table_info('%@');", tableName];
-    
-    [self appendTextToLog:sql color:nil];
-    
-    if(sqlite3_prepare(_database, [sql UTF8String], -1, &sqlStatement, NULL) != SQLITE_OK) {
-        NSLog(@"Problem with prepare statement tableInfo %@", [NSString stringWithUTF8String:(const char *)sqlite3_errmsg(_database)]);
-    }
-    
-    while (sqlite3_step(sqlStatement) == SQLITE_ROW) {
-        [result addObject:[NSString stringWithUTF8String:(char *)sqlite3_column_text(sqlStatement, 1)]];
-    }
-    
-    NSTableColumn *column[[result count]];
-    
-    for (int i = 0; i < [result count]; i++){
-        column[i] = [[NSTableColumn alloc] initWithIdentifier:[NSString stringWithFormat:@"%i", i]];
-        [column[i] setWidth:100];
-        [[column[i] headerCell] setStringValue:result[i]];
-        [[self sqlQueryTableView] addTableColumn:column[i]];
-    }
-    
-    [self setSqlDataArray:finalArray];
-    
-    [[self sqlQueryTableView] reloadData];
-}
-
--(NSArray *)tableInfo:(NSString *)table
-{
-    sqlite3_stmt *sqlStatement;
-    
-    NSMutableArray *result = [NSMutableArray array];
-    NSMutableArray *typeResultSet = [NSMutableArray array];
-    
-    NSString *sql = [NSString stringWithFormat:@"PRAGMA table_info('%@');", table];
-    
-    [self appendTextToLog:sql color:nil];
-    
-    if(sqlite3_prepare(_database, [sql UTF8String], -1, &sqlStatement, NULL) != SQLITE_OK) {
-        NSLog(@"Problem with prepare statement tableInfo %@", [NSString stringWithUTF8String:(const char *)sqlite3_errmsg(_database)]);
-    }
-    
-    while (sqlite3_step(sqlStatement) == SQLITE_ROW) {
-        [result addObject:[NSString stringWithUTF8String:(char *)sqlite3_column_text(sqlStatement, 1)]];
-        [typeResultSet addObject:[NSString stringWithUTF8String:(char *)sqlite3_column_text(sqlStatement, 2)]];
-    }
-    
-    NSTableColumn *column[[result count]];
-    
-    for (int i = 0; i < [result count]; i++){
-        column[i] = [[NSTableColumn alloc] initWithIdentifier:[NSString stringWithFormat:@"%i", i]];
-        [column[i] setWidth:100];
-        [[column[i] headerCell] setStringValue:result[i]];
-        [[self dataTableView] addTableColumn:column[i]];
-    }
-    
-    
-    return @[result, typeResultSet];
-}
-
--(NSString *)schemaForTable:(NSString *)tableName
-{
-    sqlite3_stmt *statement;
-    
-    NSString *result = nil;
-    
-    NSString *sql = [NSString stringWithFormat:@"SELECT sql from sqlite_master where tbl_name = '%@'", tableName];
-    
-    [self appendTextToLog:sql color:nil];
-    
-    if (sqlite3_prepare_v2(_database, [sql UTF8String], -1, &statement, NULL) == SQLITE_OK) {
-        while(sqlite3_step(statement) == SQLITE_ROW) {
-            char *text = (char *)sqlite3_column_text(statement, 0);
-            
-            result = [NSString stringWithUTF8String:text];
-        }
-    }
-        
-    return result;
 }
 
 #pragma mark -
@@ -538,13 +318,14 @@
         
         [[self schemaTextView] setString:@""];
         
-        [[[self schemaTextView] textStorage] appendAttributedString:[self colorizeText:[self schemaForTable:[self currentTable]] color:nil]];
+        [[[self schemaTextView] textStorage] appendAttributedString:[self colorizeText:[[SQLManager sharedManager] schemaForTable:[self currentTable]] color:nil]];
 
-        [self selectAllFromTable:[self currentTable]];
+        [self setTableDataArray:[[[SQLManager sharedManager] selectAllFromTable:[self currentTable]] mutableCopy]];
+
         [[self dataTableView] reloadData];
         
-        [self setTableColumnsArray:[self tableInfo:selectedItem][0]];
-        [self setTableColumnTypeArray:[self tableInfo:selectedItem][1]];
+        [self setTableColumnsArray:[[SQLManager sharedManager] tableInfo:selectedItem][0]];
+        [self setTableColumnTypeArray:[[SQLManager sharedManager] tableInfo:selectedItem][1]];
         
         [[self schemaTableView] reloadData];
     }
@@ -652,128 +433,4 @@
     //    [[[self rawSqlTextView] textStorage] replaceCharactersInRange:wordRange withAttributedString:attributedString];
 }
 
--(NSArray *)sqlKeywords
-{
-    return @[@"ABORT",
-             @"ACTION",
-             @"ADD",
-             @"AFTER",
-             @"ALL",
-             @"ALTER",
-             @"ANALYZE",
-             @"AND",
-             @"AS",
-             @"ASC",
-             @"ATTACH",
-             @"AUTOINCREMENT",
-             @"BEFORE",
-             @"BEGIN",
-             @"BETWEEN",
-             @"BY",
-             @"CASCADE",
-             @"CASE",
-             @"CAST",
-             @"CHECK",
-             @"COLLATE",
-             @"COLUMN",
-             @"COMMIT",
-             @"CONFLICT",
-             @"CONSTRAINT",
-             @"CREATE",
-             @"CROSS",
-             @"CURRENT_DATE",
-             @"CURRENT_TIME",
-             @"CURRENT_TIMESTAMP",
-             @"DATABASE",
-             @"DEFAULT",
-             @"DEFERRABLE",
-             @"DEFERRED",
-             @"DELETE",
-             @"DESC",
-             @"DETACH",
-             @"DISTINCT",
-             @"DROP",
-             @"EACH",
-             @"ELSE",
-             @"END",
-             @"ESCAPE",
-             @"EXCEPT",
-             @"EXCLUSIVE",
-             @"EXISTS",
-             @"EXPLAIN",
-             @"FAIL",
-             @"FOR",
-             @"FOREIGN",
-             @"FROM",
-             @"FULL",
-             @"GLOB",
-             @"GROUP",
-             @"HAVING",
-             @"IF",
-             @"IGNORE",
-             @"IMMEDIATE",
-             @"IN",
-             @"INDEX",
-             @"INDEXED",
-             @"INITIALLY",
-             @"INNER",
-             @"INSERT",
-             @"INSTEAD",
-             @"INTERSECT",
-             @"INTO",
-             @"IS",
-             @"ISNULL",
-             @"JOIN",
-             @"KEY",
-             @"LEFT",
-             @"LIKE",
-             @"LIMIT",
-             @"MATCH",
-             @"NATURAL",
-             @"NO",
-             @"NOT",
-             @"NOTNULL",
-             @"NULL",
-             @"OF",
-             @"OFFSET",
-             @"ON",
-             @"OR",
-             @"ORDER",
-             @"OUTER",
-             @"PLAN",
-             @"PRAGMA",
-             @"PRIMARY",
-             @"QUERY",
-             @"RAISE",
-             @"REFERENCES",
-             @"REGEXP",
-             @"REINDEX",
-             @"RELEASE",
-             @"RENAME",
-             @"REPLACE",
-             @"RESTRICT",
-             @"RIGHT",
-             @"ROLLBACK",
-             @"ROW",
-             @"SAVEPOINT",
-             @"SELECT",
-             @"SET",
-             @"TABLE",
-             @"TEMP",
-             @"TEMPORARY",
-             @"THEN",
-             @"TO",
-             @"TRANSACTION",
-             @"TRIGGER",
-             @"UNION",
-             @"UNIQUE",
-             @"UPDATE",
-             @"USING",
-             @"VACUUM",
-             @"VALUES",
-             @"VIEW",
-             @"VIRTUAL",
-             @"WHEN",
-             @"WHERE"];
-}
 @end
